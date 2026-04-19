@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Hybrid Athlete Tracker</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1a1a24;
+    --surface3: #22222e;
+    --border: #2a2a3a;
+    --text: #e8e8f0;
+    --text2: #8888a0;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --red: #ff6b6b;
+    --green: #51cf66;
+    --orange: #ffa94d;
+    --blue: #74b9ff;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---- Header ---- */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px 0;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent2); }
+  .header-actions { display: flex; gap: 8px; }
+  .header-actions button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .header-actions button:hover { background: var(--surface3); color: var(--text); }
+  .header-actions button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ---- Week Selector ---- */
+  .week-selector {
+    display: flex;
+    gap: 4px;
+    padding-bottom: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .week-selector::-webkit-scrollbar { display: none; }
+  .week-btn {
+    flex-shrink: 0;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .week-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .week-btn:hover:not(.active) { background: var(--surface2); }
+
+  /* ---- Day Tabs ---- */
+  .day-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 16px 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab {
+    flex-shrink: 0;
+    padding: 12px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 50px;
+  }
+  .day-tab.active {
+    color: var(--accent2);
+    border-bottom-color: var(--accent);
+  }
+  .day-tab .day-num { display: block; font-size: 15px; font-weight: 700; }
+  .day-tab .day-label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .day-tab.rest-day { opacity: 0.5; }
+  .day-tab.rest-day.active { opacity: 1; }
+
+  /* ---- Main Content ---- */
+  .main { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+  .day-header {
+    margin-bottom: 20px;
+  }
+  .day-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .day-header p {
+    color: var(--text2);
+    font-size: 13px;
+  }
+
+  /* ---- Exercise Card ---- */
+  .exercise-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .exercise-header {
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .exercise-name {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .exercise-target {
+    font-size: 12px;
+    color: var(--text2);
+    background: var(--surface3);
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+  .exercise-body {
+    padding: 0 16px 14px;
+  }
+  .exercise-note {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  /* ---- Set Rows ---- */
+  .set-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 1fr 40px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .set-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    text-align: center;
+  }
+  .set-input-group {
+    position: relative;
+  }
+  .set-input-group label {
+    position: absolute;
+    top: 4px;
+    left: 10px;
+    font-size: 9px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+  }
+  .set-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    padding: 18px 10px 6px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+  }
+  .set-input:focus { border-color: var(--accent); }
+  .set-input::placeholder { color: #444; font-weight: 400; font-size: 13px; }
+  .set-input::-webkit-inner-spin-button,
+  .set-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .set-check {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: transparent;
+    font-size: 14px;
+    align-self: center;
+  }
+  .set-check.done {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  .sets-header {
+    display: grid;
+    grid-template-columns: 36px 1fr 1fr 40px;
+    gap: 8px;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sets-header span {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  /* ---- Session Notes ---- */
+  .session-notes {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+  .session-notes label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .session-notes textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    padding: 12px;
+    min-height: 80px;
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .session-notes textarea:focus { border-color: var(--accent); }
+  .session-notes textarea::placeholder { color: var(--text2); }
+
+  /* ---- Rest Day ---- */
+  .rest-day-content {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .rest-day-content h2 {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  .rest-day-content p {
+    color: var(--text2);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  .checklist {
+    text-align: left;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: transparent;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: transparent;
+    font-size: 12px;
+  }
+  .checklist-check.done {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+  .checklist-text { font-size: 14px; }
+  .checklist-item.checked .checklist-text { color: var(--text2); text-decoration: line-through; }
+
+  /* ---- Body Check-in (Day 7) ---- */
+  .checkin-grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .checkin-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .checkin-item label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .checkin-item input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+    padding: 10px 12px;
+    outline: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+  .checkin-item input:focus { border-color: var(--accent); }
+  .checkin-item input::placeholder { color: #444; }
+  .checkin-item input::-webkit-inner-spin-button,
+  .checkin-item input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  /* ---- Progress View ---- */
+  .progress-view { padding: 16px; max-width: 600px; margin: 0 auto; display: none; }
+  .progress-view.visible { display: block; }
+  .progress-view h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .progress-view > p {
+    color: var(--text2);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .lift-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .lift-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .lift-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 120px;
+    padding-top: 8px;
+  }
+  .chart-bar-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .chart-value {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .chart-bar {
+    width: 100%;
+    max-width: 40px;
+    border-radius: 6px 6px 0 0;
+    transition: height 0.5s ease;
+    min-height: 4px;
+  }
+  .chart-label {
+    font-size: 10px;
+    color: var(--text2);
+    margin-top: 6px;
+  }
+  .lift-card .no-data {
+    color: var(--text2);
+    font-size: 13px;
+    text-align: center;
+    padding: 30px 0;
+  }
+  .lift-target {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .lift-target .target-val {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  /* ---- Saved indicator ---- */
+  .save-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--green);
+    color: #000;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform 0.3s ease;
+    z-index: 200;
+    pointer-events: none;
+  }
+  .save-indicator.show { transform: translateX(-50%) translateY(0); }
+
+  /* ---- Completion Badge ---- */
+  .completion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  .completion-badge .fill-bar {
+    width: 60px;
+    height: 4px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .completion-badge .fill-bar-inner {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* ---- Utilities ---- */
+  .hidden { display: none !important; }
+
+  /* ---- Modal ---- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+  }
+  .modal h3 { margin-bottom: 12px; }
+  .modal p { color: var(--text2); font-size: 13px; margin-bottom: 16px; }
+  .modal textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 12px;
+    font-family: monospace;
+    padding: 12px;
+    min-height: 120px;
+    resize: vertical;
+    outline: none;
+  }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .modal-actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent) !important; }
+  .btn-secondary { background: var(--surface2); color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">HYBRID <span>ATHLETE</span></div>
+    <div class="header-actions">
+      <button id="btn-workout" class="active" onclick="showView('workout')">Workout</button>
+      <button id="btn-progress" onclick="showView('progress')">Progress</button>
+      <button id="btn-export" onclick="exportData()">Export</button>
+    </div>
+  </div>
+  <div class="week-selector" id="week-selector"></div>
+</div>
+
+<div class="day-tabs" id="day-tabs"></div>
+
+<div class="main" id="workout-view"></div>
+<div class="progress-view" id="progress-view"></div>
+
+<div class="save-indicator" id="save-indicator">Saved</div>
+
+<script>
+// ============================================================
+// PROGRAM DATA
+// ============================================================
+const PROGRAM = {
+  weeks: 6,
+  days: [
+    {
+      id: 1,
+      name: "Upper Strength",
+      shortName: "Upper S",
+      type: "training",
+      focus: "Heavy compounds — build raw pressing & pulling strength",
+      exercises: [
+        { name: "Barbell Bench Press", sets: 5, reps: "5", note: "Main lift — progressive overload", targets: [205,215,220,225,235,240] },
+        { name: "Weighted Pull-Ups", sets: 4, reps: "6", note: "Add weight via belt or DB between legs" },
+        { name: "Barbell Overhead Press", sets: 4, reps: "6", note: "Brace core, squeeze glutes", targets: [105,110,115,115,120,125] },
+        { name: "Pendlay Row", sets: 4, reps: "6", note: "Dead stop each rep from floor" },
+        { name: "Pause DB Incline Press", sets: 3, reps: "8", note: "3-sec pause at bottom" },
+        { name: "Face Pulls", sets: 3, reps: "15", note: "Shoulder health — retract scapulae" }
+      ]
+    },
+    {
+      id: 2,
+      name: "Lower Strength",
+      shortName: "Lower S",
+      type: "training",
+      focus: "Heavy squats & posterior chain",
+      exercises: [
+        { name: "Back Squat", sets: 5, reps: "5", note: "Main lift — drive knees out", targets: [245,255,265,275,285,290] },
+        { name: "Romanian Deadlift", sets: 4, reps: "8", note: "4-sec eccentric, feel the hamstrings" },
+        { name: "DB Walking Lunges", sets: 3, reps: "12/leg", note: "Full depth, drive through heel" },
+        { name: "Seated Leg Curl", sets: 3, reps: "12", note: "Squeeze at top" },
+        { name: "Cable Pull-Through", sets: 3, reps: "15", note: "Full hip extension, squeeze glutes" },
+        { name: "Standing Calf Raise", sets: 4, reps: "8", note: "Heavy, 3-sec eccentric" }
+      ]
+    },
+    {
+      id: 3,
+      name: "Rest / Recovery",
+      shortName: "Rest",
+      type: "rest",
+      focus: "Light activity, stretch, recover",
+      checklist: [
+        "Light cardio (20-30 min walk or bike)",
+        "Foam roll — quads, hip flexors, lats",
+        "Stretch — full body, 15 min",
+        "Hydrate — 3-4L water today",
+        "Sauna / ice bath (optional)"
+      ]
+    },
+    {
+      id: 4,
+      name: "Upper Hypertrophy",
+      shortName: "Upper H",
+      type: "training",
+      focus: "Volume for muscle growth — chase the pump",
+      exercises: [
+        { name: "Incline DB Press", sets: 4, reps: "10", note: "Stretch at bottom, squeeze top", targets: [55,60,60,65,65,70] },
+        { name: "Cable Row (Close Grip)", sets: 4, reps: "12", note: "Elbows tight, squeeze 2 sec" },
+        { name: "DB Lateral Raises", sets: 4, reps: "15", note: "Slight lean, no swinging" },
+        { name: "Cable Flye 21s", sets: 3, reps: "7/7/7", note: "7 top + 7 bottom + 7 full ROM" },
+        { name: "Skull Crushers", sets: 3, reps: "12", note: "Slow eccentric, myo-reps last set" },
+        { name: "Hammer Curls", sets: 3, reps: "12", note: "Supinate at top for extra squeeze" },
+        { name: "Rear Delt Flyes", sets: 3, reps: "15", note: "Retract scapulae, squeeze 2 sec" }
+      ]
+    },
+    {
+      id: 5,
+      name: "Lower Hypertrophy",
+      shortName: "Lower H",
+      type: "training",
+      focus: "Volume for legs — build dense muscle",
+      exercises: [
+        { name: "Deadlift", sets: 4, reps: "5", note: "Main lift — pull slack out of bar", targets: [295,315,325,335,345,350] },
+        { name: "Bulgarian Split Squat", sets: 4, reps: "10/leg", note: "Rear foot elevated, full depth" },
+        { name: "Leg Extension", sets: 3, reps: "15", note: "Full ROM, squeeze top 2 sec" },
+        { name: "Lying Leg Curl", sets: 3, reps: "15", note: "Constant tension, don't let stack rest" },
+        { name: "Hip Thrust", sets: 4, reps: "12", note: "Full hip extension, squeeze top" }
+      ]
+    },
+    {
+      id: 6,
+      name: "Arms / Shoulders / Core",
+      shortName: "Arms",
+      type: "training",
+      focus: "Weak points, aesthetics, core strength",
+      exercises: [
+        { name: "Arnold Press", sets: 3, reps: "10", note: "Full rotation, squeeze at top" },
+        { name: "Cable Lateral Raise", sets: 4, reps: "20", note: "Constant tension — burn it out" },
+        { name: "BB Wide Grip Curls", sets: 3, reps: "10", note: "Heavy, strict form" },
+        { name: "Tricep Kickback 21s", sets: 3, reps: "7/7/7", note: "7 bottom + 7 top + 7 full" },
+        { name: "Preacher Curls", sets: 3, reps: "12", note: "Peak contraction at top" },
+        { name: "Rope Pushdowns", sets: 3, reps: "15", note: "Split the rope at bottom" },
+        { name: "Hanging Leg Raises", sets: 4, reps: "12", note: "Curl pelvis, no swinging" },
+        { name: "Cable Crunches", sets: 3, reps: "20", note: "Round your back, full ROM" }
+      ]
+    },
+    {
+      id: 7,
+      name: "Full Rest",
+      shortName: "Rest",
+      type: "checkin",
+      focus: "Muscles grow when you rest, not when you train",
+      checkinFields: [
+        { key: "bodyweight", label: "Body Weight (lbs)", type: "number", placeholder: "185" },
+        { key: "waist", label: "Waist (inches)", type: "number", placeholder: "32" },
+        { key: "energy", label: "Energy Level (1-10)", type: "number", placeholder: "7" },
+        { key: "sleep", label: "Sleep Quality (1-10)", type: "number", placeholder: "8" },
+        { key: "soreness", label: "Soreness Level (1-10)", type: "number", placeholder: "5" },
+        { key: "mood", label: "Overall Mood (1-10)", type: "number", placeholder: "8" }
+      ]
+    }
+  ]
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let currentWeek = 1;
+let currentDay = 1;
+let currentView = 'workout';
+let saveTimeout = null;
+
+// ============================================================
+// STORAGE
+// ============================================================
+function getKey(week, day, exercise, set, field) {
+  return `ht_w${week}_d${day}_e${exercise}_s${set}_${field}`;
+}
+function getNotesKey(week, day) {
+  return `ht_notes_w${week}_d${day}`;
+}
+function getCheckKey(week, day, exercise, set) {
+  return `ht_check_w${week}_d${day}_e${exercise}_s${set}`;
+}
+function getChecklistKey(week, day, idx) {
+  return `ht_cl_w${week}_d${day}_${idx}`;
+}
+function getCheckinKey(week, key) {
+  return `ht_ci_w${week}_${key}`;
+}
+function save(key, value) {
+  localStorage.setItem(key, value);
+  showSaved();
+}
+function load(key) {
+  return localStorage.getItem(key) || '';
+}
+function showSaved() {
+  clearTimeout(saveTimeout);
+  const el = document.getElementById('save-indicator');
+  el.classList.add('show');
+  saveTimeout = setTimeout(() => el.classList.remove('show'), 1200);
+}
+
+// ============================================================
+// RENDER: Week Selector
+// ============================================================
+function renderWeekSelector() {
+  const container = document.getElementById('week-selector');
+  container.innerHTML = '';
+  for (let w = 1; w <= PROGRAM.weeks; w++) {
+    const btn = document.createElement('button');
+    btn.className = `week-btn ${w === currentWeek ? 'active' : ''}`;
+    btn.textContent = `Week ${w}`;
+    btn.onclick = () => { currentWeek = w; render(); };
+    container.appendChild(btn);
+  }
+}
+
+// ============================================================
+// RENDER: Day Tabs
+// ============================================================
+function renderDayTabs() {
+  const container = document.getElementById('day-tabs');
+  container.innerHTML = '';
+  PROGRAM.days.forEach(day => {
+    const tab = document.createElement('button');
+    const isRest = day.type === 'rest' || day.type === 'checkin';
+    tab.className = `day-tab ${day.id === currentDay ? 'active' : ''} ${isRest ? 'rest-day' : ''}`;
+    tab.innerHTML = `<span class="day-num">${day.id}</span><span class="day-label">${day.shortName}</span>`;
+    tab.onclick = () => { currentDay = day.id; render(); };
+    container.appendChild(tab);
+  });
+}
+
+// ============================================================
+// RENDER: Training Day
+// ============================================================
+function renderTrainingDay(day) {
+  const view = document.getElementById('workout-view');
+  const completion = getCompletionPct(currentWeek, day);
+
+  let html = `
+    <div class="day-header">
+      <h2>Day ${day.id}: ${day.name}</h2>
+      <p>${day.focus}</p>
+      <div class="completion-badge">
+        <div class="fill-bar"><div class="fill-bar-inner" style="width:${completion}%"></div></div>
+        ${Math.round(completion)}% logged
+      </div>
+    </div>
+  `;
+
+  day.exercises.forEach((ex, eIdx) => {
+    const targetWeight = ex.targets ? ex.targets[currentWeek - 1] : null;
+    const targetLabel = targetWeight ? (ex.name.includes('DB') || ex.name.includes('Incline DB') ? `${targetWeight}s/hand` : `${targetWeight} lbs`) : '';
+
+    html += `
+      <div class="exercise-card">
+        <div class="exercise-header">
+          <span class="exercise-name">${ex.name}</span>
+          <span class="exercise-target">${ex.sets} x ${ex.reps}</span>
+        </div>
+        <div class="exercise-body">
+          ${ex.note ? `<div class="exercise-note">${ex.note}${targetWeight ? ` — Target: ${targetLabel}` : ''}</div>` : ''}
+          <div class="sets-header">
+            <span>SET</span>
+            <span>WEIGHT</span>
+            <span>REPS</span>
+            <span></span>
+          </div>
+    `;
+
+    for (let s = 1; s <= ex.sets; s++) {
+      const wKey = getKey(currentWeek, day.id, eIdx, s, 'w');
+      const rKey = getKey(currentWeek, day.id, eIdx, s, 'r');
+      const cKey = getCheckKey(currentWeek, day.id, eIdx, s);
+      const wVal = load(wKey);
+      const rVal = load(rKey);
+      const checked = load(cKey) === '1';
+      const placeholder = targetWeight && s === 1 ? targetWeight : '';
+
+      html += `
+        <div class="set-row">
+          <span class="set-label">${s}</span>
+          <div class="set-input-group">
+            <label>LBS</label>
+            <input class="set-input" type="number" inputmode="decimal" value="${wVal}" placeholder="${placeholder}"
+              onchange="save('${wKey}', this.value); updateCompletion();"
+              onfocus="this.select();">
+          </div>
+          <div class="set-input-group">
+            <label>REPS</label>
+            <input class="set-input" type="number" inputmode="numeric" value="${rVal}" placeholder="${ex.reps}"
+              onchange="save('${rKey}', this.value); updateCompletion();"
+              onfocus="this.select();">
+          </div>
+          <button class="set-check ${checked ? 'done' : ''}" onclick="toggleCheck(this, '${cKey}')">✓</button>
+        </div>
+      `;
+    }
+
+    html += `</div></div>`;
+  });
+
+  // Session notes
+  const notesKey = getNotesKey(currentWeek, day.id);
+  const notesVal = load(notesKey);
+  html += `
+    <div class="session-notes">
+      <label>Session Notes</label>
+      <textarea placeholder="How did it feel? Anything to remember for next week..."
+        onchange="save('${notesKey}', this.value)">${notesVal}</textarea>
+    </div>
+  `;
+
+  view.innerHTML = html;
+}
+
+// ============================================================
+// RENDER: Rest Day
+// ============================================================
+function renderRestDay(day) {
+  const view = document.getElementById('workout-view');
+  let html = `
+    <div class="rest-day-content">
+      <h2>${day.name}</h2>
+      <p>${day.focus}</p>
+      <div class="checklist">
+  `;
+
+  day.checklist.forEach((item, idx) => {
+    const key = getChecklistKey(currentWeek, day.id, idx);
+    const checked = load(key) === '1';
+    html += `
+      <div class="checklist-item ${checked ? 'checked' : ''}" onclick="toggleChecklist(this, '${key}', ${idx})">
+        <div class="checklist-check ${checked ? 'done' : ''}">✓</div>
+        <span class="checklist-text">${item}</span>
+      </div>
+    `;
+  });
+
+  html += `</div></div>`;
+
+  const notesKey = getNotesKey(currentWeek, day.id);
+  const notesVal = load(notesKey);
+  html += `
+    <div class="session-notes" style="max-width:320px;margin:20px auto;">
+      <label>Recovery Notes</label>
+      <textarea placeholder="How are you feeling? Any soreness or tightness?"
+        onchange="save('${notesKey}', this.value)">${notesVal}</textarea>
+    </div>
+  `;
+
+  view.innerHTML = html;
+}
+
+// ============================================================
+// RENDER: Check-in Day (Day 7)
+// ============================================================
+function renderCheckinDay(day) {
+  const view = document.getElementById('workout-view');
+  let html = `
+    <div class="rest-day-content">
+      <h2>${day.name}</h2>
+      <p>${day.focus}</p>
+    </div>
+    <div class="checkin-grid">
+  `;
+
+  day.checkinFields.forEach(field => {
+    const key = getCheckinKey(currentWeek, field.key);
+    const val = load(key);
+    html += `
+      <div class="checkin-item">
+        <label>${field.label}</label>
+        <input type="number" inputmode="decimal" value="${val}" placeholder="${field.placeholder}"
+          onchange="save('${key}', this.value)"
+          onfocus="this.select();">
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+
+  const notesKey = getNotesKey(currentWeek, day.id);
+  const notesVal = load(notesKey);
+  html += `
+    <div class="session-notes">
+      <label>Weekly Reflection</label>
+      <textarea placeholder="What went well this week? What to improve?"
+        onchange="save('${notesKey}', this.value)">${notesVal}</textarea>
+    </div>
+  `;
+
+  view.innerHTML = html;
+}
+
+// ============================================================
+// RENDER: Progress View
+// ============================================================
+function renderProgress() {
+  const container = document.getElementById('progress-view');
+  const mainLifts = [
+    { name: "Bench Press", dayIdx: 0, exIdx: 0, color: "var(--accent2)", targets: [205,215,220,225,235,240] },
+    { name: "Back Squat", dayIdx: 1, exIdx: 0, color: "var(--green)", targets: [245,255,265,275,285,290] },
+    { name: "Deadlift", dayIdx: 4, exIdx: 0, color: "var(--orange)", targets: [295,315,325,335,345,350] },
+    { name: "Overhead Press", dayIdx: 0, exIdx: 2, color: "var(--blue)", targets: [105,110,115,115,120,125] }
+  ];
+
+  let html = `<h2>Progress Tracker</h2><p>Your main lift progression across 6 weeks</p>`;
+
+  mainLifts.forEach(lift => {
+    const day = PROGRAM.days[lift.dayIdx];
+    const ex = day.exercises[lift.exIdx];
+    let maxWeight = 0;
+    let weekData = [];
+
+    for (let w = 1; w <= 6; w++) {
+      let bestWeight = 0;
+      for (let s = 1; s <= ex.sets; s++) {
+        const wKey = getKey(w, day.id, lift.exIdx, s, 'w');
+        const val = parseFloat(load(wKey));
+        if (val > bestWeight) bestWeight = val;
+      }
+      weekData.push(bestWeight);
+      if (bestWeight > maxWeight) maxWeight = bestWeight;
+    }
+
+    const hasData = weekData.some(v => v > 0);
+    const chartMax = Math.max(maxWeight, lift.targets[5]) * 1.1;
+
+    html += `<div class="lift-card"><h3>${lift.name}</h3>`;
+
+    if (hasData) {
+      html += `<div class="lift-chart">`;
+      weekData.forEach((val, i) => {
+        const height = val > 0 ? Math.max((val / chartMax) * 100, 5) : 0;
+        html += `
+          <div class="chart-bar-wrapper">
+            ${val > 0 ? `<div class="chart-value">${val}</div>` : ''}
+            <div class="chart-bar" style="height:${height}%;background:${lift.color};${val === 0 ? 'opacity:0.15;height:100%;' : ''}"></div>
+            <div class="chart-label">Wk${i + 1}</div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="no-data">No data yet — start logging to see progress</div>`;
+    }
+
+    html += `
+      <div class="lift-target">
+        <span>Week 1 target: <span class="target-val">${lift.targets[0]} lbs</span></span>
+        <span>Week 6 target: <span class="target-val">${lift.targets[5]} lbs</span></span>
+      </div>
+    </div>`;
+  });
+
+  // Body weight tracking
+  let bwData = [];
+  let hasBW = false;
+  for (let w = 1; w <= 6; w++) {
+    const val = parseFloat(load(getCheckinKey(w, 'bodyweight')));
+    bwData.push(val || 0);
+    if (val > 0) hasBW = true;
+  }
+
+  html += `<div class="lift-card"><h3>Body Weight</h3>`;
+  if (hasBW) {
+    const minBW = Math.min(...bwData.filter(v => v > 0)) - 5;
+    const maxBW = Math.max(...bwData) + 5;
+    const range = maxBW - minBW || 1;
+    html += `<div class="lift-chart">`;
+    bwData.forEach((val, i) => {
+      const height = val > 0 ? Math.max(((val - minBW) / range) * 100, 5) : 0;
+      html += `
+        <div class="chart-bar-wrapper">
+          ${val > 0 ? `<div class="chart-value">${val}</div>` : ''}
+          <div class="chart-bar" style="height:${height}%;background:var(--text2);${val === 0 ? 'opacity:0.15;height:100%;' : ''}"></div>
+          <div class="chart-label">Wk${i + 1}</div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="no-data">Log your weight on Day 7 check-in</div>`;
+  }
+  html += `</div>`;
+
+  container.innerHTML = html;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function toggleCheck(btn, key) {
+  const isDone = btn.classList.toggle('done');
+  save(key, isDone ? '1' : '');
+  updateCompletion();
+}
+
+function toggleChecklist(item, key, idx) {
+  const check = item.querySelector('.checklist-check');
+  const isDone = check.classList.toggle('done');
+  item.classList.toggle('checked');
+  save(key, isDone ? '1' : '');
+}
+
+function getCompletionPct(week, day) {
+  if (day.type !== 'training') return 0;
+  let total = 0;
+  let filled = 0;
+  day.exercises.forEach((ex, eIdx) => {
+    for (let s = 1; s <= ex.sets; s++) {
+      total += 2; // weight + reps
+      if (load(getKey(week, day.id, eIdx, s, 'w'))) filled++;
+      if (load(getKey(week, day.id, eIdx, s, 'r'))) filled++;
+    }
+  });
+  return total > 0 ? (filled / total) * 100 : 0;
+}
+
+function updateCompletion() {
+  const badge = document.querySelector('.completion-badge');
+  if (!badge) return;
+  const day = PROGRAM.days.find(d => d.id === currentDay);
+  if (!day || day.type !== 'training') return;
+  const pct = getCompletionPct(currentWeek, day);
+  badge.querySelector('.fill-bar-inner').style.width = pct + '%';
+  badge.childNodes[badge.childNodes.length - 1].textContent = ` ${Math.round(pct)}% logged`;
+}
+
+function showView(view) {
+  currentView = view;
+  document.getElementById('btn-workout').classList.toggle('active', view === 'workout');
+  document.getElementById('btn-progress').classList.toggle('active', view === 'progress');
+  document.getElementById('workout-view').classList.toggle('hidden', view !== 'workout');
+  document.getElementById('day-tabs').classList.toggle('hidden', view !== 'workout');
+  document.getElementById('progress-view').classList.toggle('visible', view === 'progress');
+  if (view === 'progress') renderProgress();
+}
+
+function exportData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('ht_')) {
+      data[key] = localStorage.getItem(key);
+    }
+  }
+  const json = JSON.stringify(data, null, 2);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Export Data</h3>
+      <p>Copy this JSON to back up your workout data. Paste it back later to restore.</p>
+      <textarea readonly>${json}</textarea>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+        <button class="btn-primary" onclick="navigator.clipboard.writeText(this.closest('.modal').querySelector('textarea').value); this.textContent='Copied!';">Copy</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+// ============================================================
+// MAIN RENDER
+// ============================================================
+function render() {
+  renderWeekSelector();
+  renderDayTabs();
+
+  const day = PROGRAM.days.find(d => d.id === currentDay);
+  if (!day) return;
+
+  if (day.type === 'training') renderTrainingDay(day);
+  else if (day.type === 'rest') renderRestDay(day);
+  else if (day.type === 'checkin') renderCheckinDay(day);
+
+  if (currentView === 'progress') renderProgress();
+}
+
+// Boot
+render();
+</script>
+</body>
+</html>
